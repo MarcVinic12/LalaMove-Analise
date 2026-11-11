@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1115" />
+  <title>Lalamove · Controle Financeiro de Entregas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            lala: { 50:'#fff4ed', 100:'#ffe6d4', 300:'#ffb07a', 400:'#ff8a3d', 500:'#f16622', 600:'#e04f12', 700:'#b93c10' },
+            ink:  { 900:'#0f1115', 800:'#161a21', 700:'#1e232c', 600:'#2a303b', 500:'#3a4250', 400:'#6b7584', 300:'#9aa3b2' }
+          },
+          fontFamily: { sans: ['Inter','system-ui','-apple-system','Segoe UI','Roboto','sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+    .tnum { font-variant-numeric: tabular-nums; }
+    .fade-in { animation: fade .25s ease; }
+    @keyframes fade { from { opacity:0; transform: translateY(4px);} to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body class="bg-ink-900 text-slate-100 font-sans min-h-screen antialiased">
+
+  <!-- ============ HEADER ============ -->
+  <header class="sticky top-0 z-30 bg-ink-900/90 backdrop-blur border-b border-ink-700">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-lala-500 flex items-center justify-center shadow-lg shadow-lala-500/20">
+          <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>
+        </div>
+        <div class="leading-tight">
+          <h1 class="font-bold text-base sm:text-lg">Controle de Entregas</h1>
+          <p class="text-[11px] text-ink-300">Lalamove · lucro real por corrida</p>
+        </div>
+      </div>
+      <button id="btnToggleSettings" class="flex items-center gap-1.5 text-xs sm:text-sm px-3 py-2 rounded-lg bg-ink-700 hover:bg-ink-600 border border-ink-600 transition">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span id="settingsSummary" class="tnum">Veículo</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-24 pt-4 space-y-5">
+
+    <!-- ============ 1. CONFIGURAÇÕES DO VEÍCULO ============ -->
+    <section id="settingsPanel" class="bg-ink-800 border border-ink-700 rounded-2xl p-4 sm:p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-300">Configurações do veículo</h2>
+        <span id="settingsSaved" class="text-[11px] text-emerald-400 opacity-0 transition-opacity">✓ salvo</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <label class="block">
+          <span class="text-xs text-ink-300">Consumo médio (km/L)</span>
+          <div class="mt-1 relative">
+            <input id="cfgConsumo" type="text" inputmode="decimal" placeholder="14,5"
+              class="w-full bg-ink-900 border border-ink-600 rounded-xl px-3 py-3 pr-14 text-lg tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-400">km/L</span>
+          </div>
+        </label>
+        <label class="block">
+          <span class="text-xs text-ink-300">Preço do combustível (R$/L)</span>
+          <div class="mt-1 relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-400">R$</span>
+            <input id="cfgPreco" type="text" inputmode="decimal" placeholder="5,89"
+              class="w-full bg-ink-900 border border-ink-600 rounded-xl pl-10 pr-10 py-3 text-lg tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-400">/L</span>
+          </div>
+        </label>
+        <label class="block">
+          <span class="text-xs text-ink-300">Meta mínima de lucro (R$/km)</span>
+          <div class="mt-1 relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-400">R$</span>
+            <input id="cfgMeta" type="text" inputmode="decimal" placeholder="1,50"
+              class="w-full bg-ink-900 border border-ink-600 rounded-xl pl-10 pr-12 py-3 text-lg tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-400">/km</span>
+          </div>
+        </label>
+      </div>
+      <p class="text-[11px] text-ink-400 mt-3">Salvo automaticamente neste navegador. Cada entrega guarda o consumo e o preço do momento em que foi lançada, então mudar aqui não altera o histórico.</p>
+    </section>
+
+    <!-- ============ 4. DASHBOARD ============ -->
+    <section>
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-300">Resumo</h2>
+        <span id="dashScope" class="text-[11px] text-ink-400">Todas as entregas</span>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div class="col-span-2 lg:col-span-1 lg:order-3 rounded-2xl p-4 bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/40">
+          <p class="text-xs text-emerald-300">Lucro líquido total</p>
+          <p id="dLucro" class="text-2xl sm:text-3xl font-bold text-emerald-400 tnum mt-1">R$ 0,00</p>
+          <p id="dCount" class="text-[11px] text-emerald-300/70 mt-1">0 entregas</p>
+        </div>
+        <div class="rounded-2xl p-4 bg-ink-800 border border-ink-700 lg:order-1">
+          <p class="text-xs text-ink-300">Total bruto faturado</p>
+          <p id="dBruto" class="text-lg sm:text-xl font-semibold tnum mt-1">R$ 0,00</p>
+        </div>
+        <div class="rounded-2xl p-4 bg-ink-800 border border-ink-700 lg:order-2">
+          <p class="text-xs text-ink-300">Gasto com gasolina</p>
+          <p id="dGas" class="text-lg sm:text-xl font-semibold tnum mt-1 text-rose-400">R$ 0,00</p>
+          <p id="dExtras" class="text-[11px] text-ink-400 mt-0.5">+ R$ 0,00 extras</p>
+        </div>
+        <div class="rounded-2xl p-4 bg-ink-800 border border-ink-700 lg:order-4">
+          <p class="text-xs text-ink-300">Total de KM rodados</p>
+          <p id="dKm" class="text-lg sm:text-xl font-semibold tnum mt-1">0,0 km</p>
+          <p id="dKmVazio" class="text-[11px] text-ink-400 mt-0.5">0% vazio</p>
+        </div>
+        <div class="rounded-2xl p-4 bg-ink-800 border border-ink-700 lg:order-5">
+          <p class="text-xs text-ink-300">Média lucro por KM</p>
+          <p id="dRkm" class="text-lg sm:text-xl font-semibold tnum mt-1 text-lala-400">R$ 0,00/km</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid lg:grid-cols-5 gap-5">
+
+      <!-- ============ 2. FORMULÁRIO + CALCULADORA RÁPIDA ============ -->
+      <section class="lg:col-span-2 bg-ink-800 border border-ink-700 rounded-2xl p-4 sm:p-5 h-fit lg:sticky lg:top-20">
+        <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-300 mb-3">Nova entrega</h2>
+        <form id="formEntrega" class="space-y-3" autocomplete="off" novalidate>
+          <label class="block">
+            <span class="text-xs text-ink-300">Data</span>
+            <input id="fData" type="date" required
+              class="mt-1 w-full bg-ink-900 border border-ink-600 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+          </label>
+
+          <label class="block">
+            <span class="text-xs text-ink-300">Valor bruto recebido na Lalamove</span>
+            <div class="mt-1 relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400">R$</span>
+              <input id="fBruto" type="text" inputmode="decimal" placeholder="0,00" required
+                class="w-full bg-ink-900 border border-ink-600 rounded-xl pl-11 pr-3 py-3 text-xl font-semibold tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+            </div>
+          </label>
+
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-xs text-ink-300">KM até a coleta <span class="text-ink-400">(vazio)</span></span>
+              <div class="mt-1 relative">
+                <input id="fKmColeta" type="text" inputmode="decimal" placeholder="0"
+                  class="w-full bg-ink-900 border border-ink-600 rounded-xl px-3 pr-10 py-3 text-lg tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-400">km</span>
+              </div>
+            </label>
+            <label class="block">
+              <span class="text-xs text-ink-300">KM da entrega <span class="text-ink-400">(rodado)</span></span>
+              <div class="mt-1 relative">
+                <input id="fKmEntrega" type="text" inputmode="decimal" placeholder="0"
+                  class="w-full bg-ink-900 border border-ink-600 rounded-xl px-3 pr-10 py-3 text-lg tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-400">km</span>
+              </div>
+            </label>
+          </div>
+
+          <label class="block">
+            <span class="text-xs text-ink-300">Custos extras / pedágio / taxa <span class="text-ink-400">(opcional)</span></span>
+            <div class="mt-1 relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400">R$</span>
+              <input id="fExtras" type="text" inputmode="decimal" placeholder="0,00"
+                class="w-full bg-ink-900 border border-ink-600 rounded-xl pl-11 pr-3 py-3 tnum focus:outline-none focus:ring-2 focus:ring-lala-500 focus:border-transparent" />
+            </div>
+          </label>
+
+          <!-- CALCULADORA RÁPIDA -->
+          <div id="preview" class="rounded-2xl border-2 border-ink-600 bg-ink-900 p-4 transition-colors">
+            <div class="flex items-center justify-between">
+              <span class="text-xs uppercase tracking-wide text-ink-300">Calculadora rápida</span>
+              <span id="pVerdict" class="text-xs font-semibold px-2 py-1 rounded-full bg-ink-700 text-ink-300">Digite os valores</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <p class="text-[11px] text-ink-400">Lucro líquido</p>
+                <p id="pLucro" class="text-2xl font-bold tnum">R$ 0,00</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[11px] text-ink-400">Ganho por KM</p>
+                <p id="pRkm" class="text-2xl font-bold tnum">R$ 0,00</p>
+              </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-ink-700 grid grid-cols-3 gap-2 text-center">
+              <div><p class="text-[10px] text-ink-400">Distância</p><p id="pKm" class="text-sm font-medium tnum">0,0 km</p></div>
+              <div><p class="text-[10px] text-ink-400">Combustível</p><p id="pLitros" class="text-sm font-medium tnum">0,00 L</p></div>
+              <div><p class="text-[10px] text-ink-400">Gasolina</p><p id="pGas" class="text-sm font-medium tnum text-rose-400">R$ 0,00</p></div>
+            </div>
+            <p id="pHint" class="text-[11px] text-ink-400 mt-2 hidden"></p>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <button type="button" id="btnLimparForm" class="px-4 py-3.5 rounded-xl bg-ink-700 hover:bg-ink-600 border border-ink-600 text-sm transition">Limpar</button>
+            <button type="submit" class="flex-1 py-3.5 rounded-xl bg-lala-500 hover:bg-lala-600 active:scale-[.99] font-semibold text-white shadow-lg shadow-lala-500/20 transition">Salvar entrega</button>
+          </div>
+          <p id="formError" class="text-xs text-rose-400 hidden"></p>
+        </form>
+      </section>
+
+      <!-- ============ 5. HISTÓRICO ============ -->
+      <section class="lg:col-span-3 bg-ink-800 border border-ink-700 rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="font-semibold text-sm uppercase tracking-wide text-ink-300">Histórico</h2>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnExportar" class="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-ink-700 border border-ink-600 hover:bg-ink-600 transition" title="Baixar backup .json">
+              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+              Exportar
+            </button>
+            <button id="btnImportar" class="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-ink-700 border border-ink-600 hover:bg-ink-600 transition" title="Carregar backup .json">
+              <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9M7 14l5-5 5 5M4 3h16"/></svg>
+              Importar
+            </button>
+            <input id="fileImport" type="file" accept="application/json,.json" class="hidden" />
+            <button id="btnLimparTudo" class="text-xs px-3 py-2 rounded-lg text-rose-300 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition">Limpar tudo</button>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="flex flex-wrap gap-2 mb-3" id="quickFilters">
+          <button data-range="all"   class="qf text-xs px-3 py-1.5 rounded-full border border-ink-600 bg-ink-700">Tudo</button>
+          <button data-range="today" class="qf text-xs px-3 py-1.5 rounded-full border border-ink-600 bg-ink-700">Hoje</button>
+          <button data-range="week"  class="qf text-xs px-3 py-1.5 rounded-full border border-ink-600 bg-ink-700">7 dias</button>
+          <button data-range="month" class="qf text-xs px-3 py-1.5 rounded-full border border-ink-600 bg-ink-700">Este mês</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <label class="block">
+            <span class="text-[11px] text-ink-400">De</span>
+            <input id="fltDe" type="date" class="mt-0.5 w-full bg-ink-900 border border-ink-600 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lala-500" />
+          </label>
+          <label class="block">
+            <span class="text-[11px] text-ink-400">Até</span>
+            <input id="fltAte" type="date" class="mt-0.5 w-full bg-ink-900 border border-ink-600 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lala-500" />
+          </label>
+        </div>
+
+        <!-- Tabela (desktop) -->
+        <div class="hidden md:block overflow-x-auto -mx-1">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-[11px] uppercase tracking-wide text-ink-400 border-b border-ink-700">
+                <th class="text-left font-medium py-2 px-2">Data</th>
+                <th class="text-right font-medium py-2 px-2">KM total</th>
+                <th class="text-right font-medium py-2 px-2">Bruto</th>
+                <th class="text-right font-medium py-2 px-2">Gasolina</th>
+                <th class="text-right font-medium py-2 px-2">Lucro</th>
+                <th class="text-right font-medium py-2 px-2">R$/km</th>
+                <th class="py-2 px-2"></th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="tnum"></tbody>
+          </table>
+        </div>
+
+        <!-- Cards (mobile) -->
+        <ul id="cardList" class="md:hidden space-y-2.5"></ul>
+
+        <div id="emptyState" class="hidden text-center py-10 text-ink-400">
+          <p class="text-3xl mb-2">📦</p>
+          <p class="text-sm">Nenhuma entrega neste período.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden">
+    <div class="flex items-center gap-3 bg-ink-700 border border-ink-600 rounded-xl px-4 py-3 shadow-2xl text-sm">
+      <span id="toastMsg"></span>
+      <button id="toastUndo" class="hidden font-semibold text-lala-400 hover:text-lala-300">Desfazer</button>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   CAMADA DE DADOS
+   Toda leitura/escrita passa por `DataStore`. Para migrar ao Firebase
+   Firestore, basta trocar a implementação abaixo por `FirestoreStore`
+   (exemplo comentado no fim deste bloco) mantendo as mesmas funções
+   assíncronas. O restante do app não precisa mudar.
+
+   Formato de cada documento "entrega" (coleção `deliveries`):
+   {
+     id:          string,   // uuid
+     date:        "YYYY-MM-DD",
+     gross:       number,   // valor bruto R$
+     kmPickup:    number,   // km até a coleta (vazio)
+     kmDelivery:  number,   // km da entrega
+     extras:      number,   // pedágio / taxa R$
+     consumption: number,   // km/L no momento do lançamento
+     fuelPrice:   number,   // R$/L no momento do lançamento
+     createdAt:   number    // timestamp ms
+   }
+   Configurações (documento `settings/vehicle`):
+   { consumption: number, fuelPrice: number, targetPerKm: number }
+   ===================================================================== */
+const LocalStore = {
+  KEYS: { deliveries: 'lalamove.deliveries.v1', settings: 'lalamove.settings.v1' },
+  _read(key, fallback) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch { return fallback; }
+  },
+  _write(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (e) { console.error('Falha ao salvar no localStorage', e); return false; }
+  },
+  async getSettings()        { return this._read(this.KEYS.settings, null); },
+  async saveSettings(s)      { this._write(this.KEYS.settings, s); },
+  async listDeliveries()     { return this._read(this.KEYS.deliveries, []); },
+  async addDelivery(d)       { const all = await this.listDeliveries(); all.push(d); this._write(this.KEYS.deliveries, all); return d; },
+  async deleteDelivery(id)   { const all = await this.listDeliveries(); this._write(this.KEYS.deliveries, all.filter(x => x.id !== id)); },
+  async clearDeliveries()    { this._write(this.KEYS.deliveries, []); },
+  async restoreDeliveries(l) { this._write(this.KEYS.deliveries, l); }
+};
+
+/* --- Exemplo de migração para Firestore (SDK modular v10+) ---
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDoc, setDoc, getDocs, deleteDoc, writeBatch }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const db = getFirestore(initializeApp({ /* firebaseConfig *\/ }));
+const FirestoreStore = {
+  async getSettings()      { const s = await getDoc(doc(db,'settings','vehicle')); return s.exists() ? s.data() : null; },
+  async saveSettings(s)    { await setDoc(doc(db,'settings','vehicle'), s); },
+  async listDeliveries()   { const q = await getDocs(collection(db,'deliveries')); return q.docs.map(d => d.data()); },
+  async addDelivery(d)     { await setDoc(doc(db,'deliveries',d.id), d); return d; },
+  async deleteDelivery(id) { await deleteDoc(doc(db,'deliveries',id)); },
+  async clearDeliveries()  { const q = await getDocs(collection(db,'deliveries')); const b = writeBatch(db); q.forEach(d => b.delete(d.ref)); await b.commit(); },
+  async restoreDeliveries(list) { const b = writeBatch(db); list.forEach(d => b.set(doc(db,'deliveries',d.id), d)); await b.commit(); }
+};
+-------------------------------------------------------------- */
+
+const DataStore = LocalStore;
+
+/* =====================================================================
+   UTILITÁRIOS
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const NUM = (d) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtMoney = (v) => BRL.format(Number.isFinite(v) ? v : 0);
+const fmtKm    = (v) => NUM(1).format(v || 0) + ' km';
+const fmtL     = (v) => NUM(2).format(v || 0) + ' L';
+const fmtRkm   = (v) => fmtMoney(v) + '/km';
+
+// Aceita "5,89", "5.89", "1.234,56"
+function parseNum(str) {
+  if (str == null) return 0;
+  let s = String(str).trim().replace(/\s|R\$/g, '');
+  if (!s) return 0;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+const toInput = (n) => (n || n === 0) ? String(n).replace('.', ',') : '';
+
+function todayISO() {
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+function isoOffset(days) {
+  const d = new Date(); d.setDate(d.getDate() + days); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+function fmtDate(iso) {
+  const [y, m, d] = iso.split('-'); return `${d}/${m}/${y.slice(2)}`;
+}
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+/* =====================================================================
+   CÁLCULOS
+   ===================================================================== */
+function calc({ gross, kmPickup, kmDelivery, extras, consumption, fuelPrice }) {
+  const totalKm  = (kmPickup || 0) + (kmDelivery || 0);
+  const liters   = consumption > 0 ? totalKm / consumption : 0;
+  const fuelCost = liters * (fuelPrice || 0);
+  const net      = (gross || 0) - fuelCost - (extras || 0);
+  const perKm    = totalKm > 0 ? net / totalKm : 0;
+  return { totalKm, liters, fuelCost, net, perKm };
+}
+
+/* =====================================================================
+   ESTADO
+   ===================================================================== */
+const DEFAULT_SETTINGS = { consumption: 14.5, fuelPrice: 5.89, targetPerKm: 1.5 };
+let settings = { ...DEFAULT_SETTINGS };
+let deliveries = [];
+let filter = { from: '', to: '', range: 'all' };
+
+/* =====================================================================
+   CONFIGURAÇÕES
+   ===================================================================== */
+let saveTimer;
+function readSettingsFromInputs() {
+  settings = {
+    consumption: parseNum($('cfgConsumo').value),
+    fuelPrice:   parseNum($('cfgPreco').value),
+    targetPerKm: parseNum($('cfgMeta').value)
+  };
+}
+function onSettingsInput() {
+  readSettingsFromInputs();
+  updateSettingsSummary();
+  updatePreview();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    await DataStore.saveSettings(settings);
+    const el = $('settingsSaved'); el.style.opacity = 1; setTimeout(() => el.style.opacity = 0, 1200);
+  }, 350);
+}
+function updateSettingsSummary() {
+  $('settingsSummary').textContent = `${NUM(1).format(settings.consumption)} km/L · ${fmtMoney(settings.fuelPrice)}`;
+}
+
+/* =====================================================================
+   FORMULÁRIO + CALCULADORA RÁPIDA
+   ===================================================================== */
+function readForm() {
+  return {
+    date:       $('fData').value || todayISO(),
+    gross:      parseNum($('fBruto').value),
+    kmPickup:   parseNum($('fKmColeta').value),
+    kmDelivery: parseNum($('fKmEntrega').value),
+    extras:     parseNum($('fExtras').value)
+  };
+}
+
+function verdictFor(perKm, net, hasData) {
+  const t = settings.targetPerKm || 0;
+  if (!hasData) return { label: 'Digite os valores', cls: 'bg-ink-700 text-ink-300', border: 'border-ink-600', color: '' };
+  if (net <= 0)            return { label: '✕ Prejuízo',     cls: 'bg-rose-500/20 text-rose-300',       border: 'border-rose-500/60',    color: 'text-rose-400' };
+  if (t > 0 && perKm >= t) return { label: '✓ Vale a pena',  cls: 'bg-emerald-500/20 text-emerald-300', border: 'border-emerald-500/60', color: 'text-emerald-400' };
+  if (t > 0 && perKm >= t * 0.7) return { label: '~ No limite', cls: 'bg-amber-500/20 text-amber-300',  border: 'border-amber-500/60',   color: 'text-amber-400' };
+  if (t <= 0)              return { label: '✓ Com lucro',    cls: 'bg-emerald-500/20 text-emerald-300', border: 'border-emerald-500/60', color: 'text-emerald-400' };
+  return { label: '✕ Abaixo da meta', cls: 'bg-rose-500/20 text-rose-300', border: 'border-rose-500/60', color: 'text-rose-400' };
+}
+
+function updatePreview() {
+  const f = readForm();
+  const r = calc({ ...f, consumption: settings.consumption, fuelPrice: settings.fuelPrice });
+  const hasData = f.gross > 0 && r.totalKm > 0;
+  const v = verdictFor(r.perKm, r.net, hasData);
+
+  $('pKm').textContent    = fmtKm(r.totalKm);
+  $('pLitros').textContent= fmtL(r.liters);
+  $('pGas').textContent   = fmtMoney(r.fuelCost);
+  $('pLucro').textContent = fmtMoney(r.net);
+  $('pRkm').textContent   = fmtMoney(r.perKm);
+
+  ['pLucro','pRkm'].forEach(id => {
+    $(id).className = 'text-2xl font-bold tnum ' + (hasData ? v.color : '');
+  });
+  $('pVerdict').textContent = v.label;
+  $('pVerdict').className = 'text-xs font-semibold px-2 py-1 rounded-full ' + v.cls;
+  $('preview').className = 'rounded-2xl border-2 bg-ink-900 p-4 transition-colors ' + v.border;
+
+  const hint = $('pHint');
+  if (hasData && settings.targetPerKm > 0) {
+    const minGross = settings.targetPerKm * r.totalKm + r.fuelCost + f.extras;
+    hint.textContent = `Para bater sua meta de ${fmtRkm(settings.targetPerKm)}, essa corrida precisaria pagar ao menos ${fmtMoney(minGross)}.`;
+    hint.classList.remove('hidden');
+  } else if (!(settings.consumption > 0)) {
+    hint.textContent = 'Informe o consumo do carro nas configurações.';
+    hint.classList.remove('hidden');
+  } else hint.classList.add('hidden');
+}
+
+function resetForm(keepDate = true) {
+  const d = $('fData').value;
+  $('formEntrega').reset();
+  $('fData').value = keepDate && d ? d : todayISO();
+  $('formError').classList.add('hidden');
+  updatePreview();
+}
+
+async function onSubmit(e) {
+  e.preventDefault();
+  const f = readForm();
+  const err = $('formError');
+  const problems = [];
+  if (!(f.gross > 0)) problems.push('informe o valor bruto');
+  if (!(f.kmPickup + f.kmDelivery > 0)) problems.push('informe os KMs');
+  if (!(settings.consumption > 0)) problems.push('configure o consumo do carro');
+  if (problems.length) {
+    err.textContent = 'Faltou: ' + problems.join(', ') + '.';
+    err.classList.remove('hidden');
+    return;
+  }
+  const delivery = {
+    id: uid(), ...f,
+    consumption: settings.consumption,
+    fuelPrice: settings.fuelPrice,
+    createdAt: Date.now()
+  };
+  await DataStore.addDelivery(delivery);
+  deliveries.push(delivery);
+  resetForm(true);
+  render();
+  toast('Entrega salva ✓');
+  $('fBruto').focus({ preventScroll: true });
+}
+
+/* =====================================================================
+   FILTRO
+   ===================================================================== */
+function applyRange(range) {
+  filter.range = range;
+  if (range === 'all')   { filter.from = ''; filter.to = ''; }
+  if (range === 'today') { filter.from = todayISO(); filter.to = todayISO(); }
+  if (range === 'week')  { filter.from = isoOffset(-6); filter.to = todayISO(); }
+  if (range === 'month') { filter.from = todayISO().slice(0, 8) + '01'; filter.to = todayISO(); }
+  $('fltDe').value = filter.from; $('fltAte').value = filter.to;
+  render();
+}
+function filtered() {
+  return deliveries
+    .filter(d => (!filter.from || d.date >= filter.from) && (!filter.to || d.date <= filter.to))
+    .sort((a, b) => (b.date.localeCompare(a.date)) || (b.createdAt - a.createdAt));
+}
+function updateQuickFilterUI() {
+  document.querySelectorAll('.qf').forEach(b => {
+    const active = b.dataset.range === filter.range;
+    b.className = 'qf text-xs px-3 py-1.5 rounded-full border transition ' +
+      (active ? 'bg-lala-500 border-lala-500 text-white' : 'bg-ink-700 border-ink-600 text-slate-200 hover:bg-ink-600');
+  });
+  const scope = {
+    all: 'Todas as entregas', today: 'Hoje', week: 'Últimos 7 dias', month: 'Este mês'
+  }[filter.range] || `${filter.from ? fmtDate(filter.from) : '…'} → ${filter.to ? fmtDate(filter.to) : '…'}`;
+  $('dashScope').textContent = scope;
+}
+
+/* =====================================================================
+   RENDERIZAÇÃO
+   ===================================================================== */
+function render() {
+  const list = filtered();
+  updateQuickFilterUI();
+
+  // Dashboard
+  let gross = 0, fuel = 0, extras = 0, net = 0, km = 0, kmEmpty = 0;
+  const rows = list.map(d => {
+    const r = calc(d);
+    gross += d.gross; fuel += r.fuelCost; extras += d.extras; net += r.net; km += r.totalKm; kmEmpty += d.kmPickup;
+    return { d, r };
+  });
+  $('dBruto').textContent  = fmtMoney(gross);
+  $('dGas').textContent    = fmtMoney(fuel);
+  $('dExtras').textContent = `+ ${fmtMoney(extras)} extras`;
+  $('dLucro').textContent  = fmtMoney(net);
+  $('dLucro').classList.toggle('text-rose-400', net < 0);
+  $('dLucro').classList.toggle('text-emerald-400', net >= 0);
+  $('dCount').textContent  = `${list.length} ${list.length === 1 ? 'entrega' : 'entregas'}`;
+  $('dKm').textContent     = fmtKm(km);
+  $('dKmVazio').textContent= `${km > 0 ? Math.round(kmEmpty / km * 100) : 0}% rodado vazio`;
+  $('dRkm').textContent    = fmtRkm(km > 0 ? net / km : 0);
+
+  // Lista
+  const tbody = $('tbody'), cards = $('cardList');
+  $('emptyState').classList.toggle('hidden', list.length > 0);
+
+  const perKmColor = (r) => {
+    const v = verdictFor(r.perKm, r.net, true); return v.color || 'text-slate-100';
+  };
+
+  tbody.innerHTML = rows.map(({ d, r }) => `
+    <tr class="border-b border-ink-700/60 hover:bg-ink-700/30 fade-in">
+      <td class="py-2.5 px-2 whitespace-nowrap">${fmtDate(d.date)}</td>
+      <td class="py-2.5 px-2 text-right whitespace-nowrap" title="Coleta ${NUM(1).format(d.kmPickup)} + Entrega ${NUM(1).format(d.kmDelivery)}">${fmtKm(r.totalKm)}</td>
+      <td class="py-2.5 px-2 text-right whitespace-nowrap">${fmtMoney(d.gross)}</td>
+      <td class="py-2.5 px-2 text-right whitespace-nowrap text-rose-400">${fmtMoney(r.fuelCost)}</td>
+      <td class="py-2.5 px-2 text-right whitespace-nowrap font-semibold ${r.net < 0 ? 'text-rose-400' : 'text-emerald-400'}">${fmtMoney(r.net)}</td>
+      <td class="py-2.5 px-2 text-right whitespace-nowrap ${perKmColor(r)}">${fmtMoney(r.perKm)}</td>
+      <td class="py-2.5 px-2 text-right">
+        <button data-del="${d.id}" class="p-1.5 rounded-lg text-ink-400 hover:text-rose-400 hover:bg-rose-500/10 transition" title="Excluir" aria-label="Excluir entrega">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </td>
+    </tr>`).join('');
+
+  cards.innerHTML = rows.map(({ d, r }) => `
+    <li class="bg-ink-900 border border-ink-700 rounded-xl p-3 fade-in">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <p class="text-xs text-ink-400">${fmtDate(d.date)} · ${fmtKm(r.totalKm)}
+            <span class="text-ink-500">(${NUM(1).format(d.kmPickup)} + ${NUM(1).format(d.kmDelivery)})</span></p>
+          <p class="text-xl font-bold tnum ${r.net < 0 ? 'text-rose-400' : 'text-emerald-400'}">${fmtMoney(r.net)}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold tnum ${perKmColor(r)}">${fmtRkm(r.perKm)}</span>
+          <button data-del="${d.id}" class="p-2 -mr-1 rounded-lg text-ink-400 hover:text-rose-400 hover:bg-rose-500/10" aria-label="Excluir entrega">
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mt-2 grid grid-cols-3 gap-2 text-[11px] tnum">
+        <div><span class="text-ink-400 block">Bruto</span>${fmtMoney(d.gross)}</div>
+        <div><span class="text-ink-400 block">Gasolina</span><span class="text-rose-400">${fmtMoney(r.fuelCost)}</span></div>
+        <div><span class="text-ink-400 block">Extras</span>${fmtMoney(d.extras)}</div>
+      </div>
+    </li>`).join('');
+}
+
+/* =====================================================================
+   EXCLUSÃO / LIMPAR TUDO (com desfazer)
+   ===================================================================== */
+let undoFn = null, toastTimer;
+function toast(msg, onUndo) {
+  $('toastMsg').textContent = msg;
+  undoFn = onUndo || null;
+  $('toastUndo').classList.toggle('hidden', !onUndo);
+  $('toast').classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $('toast').classList.add('hidden'); undoFn = null; }, onUndo ? 5000 : 1800);
+}
+
+async function deleteOne(id) {
+  const item = deliveries.find(d => d.id === id);
+  if (!item) return;
+  await DataStore.deleteDelivery(id);
+  deliveries = deliveries.filter(d => d.id !== id);
+  render();
+  toast('Entrega excluída', async () => {
+    await DataStore.addDelivery(item);
+    deliveries.push(item);
+    render();
+  });
+}
+
+async function clearAll() {
+  if (!deliveries.length) return;
+  if (!confirm(`Apagar TODAS as ${deliveries.length} entregas? Você poderá desfazer por alguns segundos.`)) return;
+  const backup = [...deliveries];
+  await DataStore.clearDeliveries();
+  deliveries = [];
+  render();
+  toast('Histórico apagado', async () => {
+    await DataStore.restoreDeliveries(backup);
+    deliveries = backup;
+    render();
+  });
+}
+
+/* =====================================================================
+   EXPORTAR / IMPORTAR (backup .json para trocar de aparelho)
+   ===================================================================== */
+async function exportData() {
+  const payload = {
+    app: 'lalamove-controle',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    settings,
+    deliveries
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const fileName = `lalamove-backup-${todayISO()}.json`;
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`Backup exportado (${deliveries.length} entregas)`);
+}
+
+function sanitizeDelivery(d) {
+  if (!d || typeof d !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) return null;
+  const n = (v) => { const x = Number(v); return Number.isFinite(x) && x >= 0 ? x : 0; };
+  return {
+    id: typeof d.id === 'string' && d.id ? d.id : uid(),
+    date: d.date,
+    gross: n(d.gross),
+    kmPickup: n(d.kmPickup),
+    kmDelivery: n(d.kmDelivery),
+    extras: n(d.extras),
+    consumption: n(d.consumption) || settings.consumption,
+    fuelPrice: n(d.fuelPrice) || settings.fuelPrice,
+    createdAt: n(d.createdAt) || Date.now()
+  };
+}
+
+async function importData(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); }
+  catch { alert('Arquivo inválido: não é um JSON.'); return; }
+
+  const incoming = Array.isArray(data) ? data : data && data.deliveries;
+  if (!Array.isArray(incoming)) { alert('Arquivo inválido: nenhuma entrega encontrada.'); return; }
+
+  const clean = incoming.map(sanitizeDelivery).filter(Boolean);
+  const existing = new Set(deliveries.map(d => d.id));
+  const novas = clean.filter(d => !existing.has(d.id));
+  const repetidas = clean.length - novas.length;
+
+  const msg = `Importar backup?\n\n` +
+    `• ${novas.length} entrega(s) nova(s) serão adicionadas\n` +
+    (repetidas ? `• ${repetidas} já existem aqui e serão ignoradas\n` : '') +
+    (data.settings ? `• As configurações do veículo serão substituídas pelas do backup\n` : '') +
+    `\nAs entregas atuais NÃO serão apagadas.`;
+  if (!confirm(msg)) return;
+
+  const backup = [...deliveries];
+  const backupSettings = { ...settings };
+
+  deliveries = [...deliveries, ...novas];
+  await DataStore.restoreDeliveries(deliveries);
+
+  if (data.settings && typeof data.settings === 'object') {
+    settings = { ...settings, ...{
+      consumption: Number(data.settings.consumption) || settings.consumption,
+      fuelPrice:   Number(data.settings.fuelPrice)   || settings.fuelPrice,
+      targetPerKm: Number.isFinite(Number(data.settings.targetPerKm)) ? Number(data.settings.targetPerKm) : settings.targetPerKm
+    }};
+    await DataStore.saveSettings(settings);
+    fillSettingsInputs();
+  }
+
+  applyRange('all');
+  updatePreview();
+  toast(`${novas.length} entrega(s) importada(s)`, async () => {
+    deliveries = backup; settings = backupSettings;
+    await DataStore.restoreDeliveries(backup);
+    await DataStore.saveSettings(backupSettings);
+    fillSettingsInputs(); updatePreview(); render();
+  });
+}
+
+function fillSettingsInputs() {
+  $('cfgConsumo').value = toInput(settings.consumption);
+  $('cfgPreco').value   = toInput(settings.fuelPrice);
+  $('cfgMeta').value    = toInput(settings.targetPerKm);
+  updateSettingsSummary();
+}
+
+/* =====================================================================
+   INICIALIZAÇÃO
+   ===================================================================== */
+async function init() {
+  const saved = await DataStore.getSettings();
+  settings = { ...DEFAULT_SETTINGS, ...(saved || {}) };
+  fillSettingsInputs();
+
+  // Se já configurado, recolhe o painel no mobile para ganhar espaço
+  if (saved && window.innerWidth < 768) $('settingsPanel').classList.add('hidden');
+
+  deliveries = await DataStore.listDeliveries();
+  $('fData').value = todayISO();
+
+  ['cfgConsumo','cfgPreco','cfgMeta'].forEach(id => $(id).addEventListener('input', onSettingsInput));
+  ['fBruto','fKmColeta','fKmEntrega','fExtras'].forEach(id => $(id).addEventListener('input', updatePreview));
+  $('formEntrega').addEventListener('submit', onSubmit);
+  $('btnLimparForm').addEventListener('click', () => resetForm(true));
+  $('btnLimparTudo').addEventListener('click', clearAll);
+  $('btnExportar').addEventListener('click', exportData);
+  $('btnImportar').addEventListener('click', () => $('fileImport').click());
+  $('fileImport').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) await importData(f);
+    e.target.value = '';
+  });
+  $('btnToggleSettings').addEventListener('click', () => {
+    const p = $('settingsPanel'); p.classList.toggle('hidden');
+    if (!p.classList.contains('hidden')) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('toastUndo').addEventListener('click', async () => {
+    if (undoFn) { const fn = undoFn; undoFn = null; await fn(); }
+    $('toast').classList.add('hidden');
+  });
+
+  document.querySelectorAll('.qf').forEach(b => b.addEventListener('click', () => applyRange(b.dataset.range)));
+  $('fltDe').addEventListener('change',  e => { filter.from = e.target.value; filter.range = 'custom'; render(); });
+  $('fltAte').addEventListener('change', e => { filter.to   = e.target.value; filter.range = 'custom'; render(); });
+
+  // Delegação de clique para botões de excluir (tabela e cards)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-del]');
+    if (btn) deleteOne(btn.dataset.del);
+  });
+
+  // Sincroniza entre abas abertas
+  window.addEventListener('storage', async e => {
+    if (e.key === LocalStore.KEYS.deliveries) { deliveries = await DataStore.listDeliveries(); render(); }
+  });
+
+  updatePreview();
+  render();
+}
+init();
+</script>
+</body>
+</html>
